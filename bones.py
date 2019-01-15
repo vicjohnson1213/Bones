@@ -1,3 +1,6 @@
+class BonesError(Exception):
+    pass
+
 class Argument():
     def __init__(self, name):
         self.name = name
@@ -16,10 +19,11 @@ class Option():
                 self.short_flag = flag
 
 class Command():
-    def __init__(self):
+    def __init__(self, name=None):
         self._arguments = []
         self._options = []
         self._commands = {}
+        self.name = name
 
     def argument(self, name):
         self._arguments.append(Argument(name))
@@ -28,11 +32,10 @@ class Command():
         self._options.append(Option(flags, consume))
 
     def command(self, name):
-        pass
+        self._commands[name] = Command(name=name)
+        return self._commands[name]
 
     def parse(self, argv):
-        argv = argv[1:]
-
         while len(argv):
             arg = argv.pop(0)
 
@@ -51,6 +54,10 @@ class Command():
                     setattr(self, option.name, val)
                     continue
 
+            if arg in self._commands:
+                setattr(self, 'command', self._commands[arg])
+                self._commands[arg].parse(argv)
+
             if len(self._arguments):
                 argument= self._arguments.pop(0)
                 setattr(self, argument.name, arg)
@@ -58,3 +65,6 @@ class Command():
 class Program(Command):
     def __init__(self):
         super().__init__()
+
+    def parse(self, argv):
+        super().parse(argv[1:])
