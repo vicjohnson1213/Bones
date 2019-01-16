@@ -28,12 +28,13 @@ class Option():
         self.aliases = [long] + aliases
 
 class Command():
-    def __init__(self, name=None, aliases=[]):
+    def __init__(self, name=None, aliases=[], parent=None):
         self._arguments = []
         self._options = []
         self._commands = []
         self.name = name
         self.aliases = [name] + aliases
+        self.parent = parent
 
     def argument(self, name):
         self._arguments.append(Argument(name))
@@ -45,7 +46,7 @@ class Command():
         setattr(self, utils.snake_case(option.name), None)
 
     def command(self, name, aliases=[]):
-        command = Command(name=name, aliases=aliases)
+        command = Command(name=name, aliases=aliases, parent=self)
         self._commands.append(command)
         return command
 
@@ -55,8 +56,14 @@ class Command():
         self._parse_command(argv)
 
     def help(self):
+        usage = 'usage: '
+
+        if self.parent:
+            parents = utils.get_parents(self.parent)
+            usage += '{}'.format(''.join(map(lambda p: p + ' ... ', parents)))
+
         arg_string = list(map(lambda a: '<{}>'.format(a.name), self._arguments))
-        usage = 'usage: {} [options] {}'.format(self.name, ' '.join(arg_string))
+        usage += '{} [options] {}'.format(self.name, ' '.join(arg_string))
         if len(self._commands):
             usage += ' <command>'
 
@@ -75,25 +82,31 @@ class Command():
         allNames = list(map(lambda o: o[0], options))
         allNames += list(map(lambda a: a[0], arguments))
         allNames += list(map(lambda c: c[0], commands))
-        maxlen = max(map(lambda e: len(e), allNames))
+        maxlen = max(map(lambda e: len(e), allNames), default=0)
 
-        options = map(lambda o: (o[0].ljust(maxlen + 2, ' '), o[1]), options)
-        arguments = map(lambda a: (a[0].ljust(maxlen + 2, ' '), a[1]), arguments)
-        commands = map(lambda c: (c[0].ljust(maxlen + 2, ' '), c[1]), commands)
+        options = list(map(lambda o: (o[0].ljust(maxlen + 2, ' '), o[1]), options))
+        arguments = list(map(lambda a: (a[0].ljust(maxlen + 2, ' '), a[1]), arguments))
+        commands = list(map(lambda c: (c[0].ljust(maxlen + 2, ' '), c[1]), commands))
 
-        print(usage)
-        print()
-        print('Options:')
-        for option in options:
-            print('    {}{}'.format(option[0], option[1]))
-        print()
-        print('Arguments:')
-        for argument in arguments:
-            print('    {}{}'.format(argument[0], argument[1]))
-        print()
-        print('Commands:')
-        for command in commands:
-            print('    {}{}'.format(command[0], command[1]))
+        if len(options):
+            usage += '\n\n'
+            usage += 'Options:\n'
+            for option in options:
+                usage += '    {}{}'.format(option[0], option[1])
+
+        if len(arguments):
+            usage += '\n\n'
+            usage += 'Arguments:\n'
+            for argument in arguments:
+                usage += '    {}{}'.format(argument[0], argument[1])
+
+        if len(commands):
+            usage += '\n\n'
+            usage += 'Commands:\n'
+            for command in commands:
+                usage += '    {}{}'.format(command[0], command[1])
+
+        return usage
 
     def _parse_options(self, argv):
         while len(argv):
