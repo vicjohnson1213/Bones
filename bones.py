@@ -1,56 +1,55 @@
 class BonesError(Exception):
     pass
 
+class UnknownOptionError(BonesError):
+    def __init__(self, option):
+        self.option = option
+
+class MissingArgumentsError(BonesError):
+    def __init__(self, args):
+        self.arguments = args
+
+class InvalidCommandError(BonesError):
+    def __init__(self, command):
+        self.command = command
+
 class Argument():
     def __init__(self, name):
         self.name = name
 
 class Option():
-    def __init__(self, flags, consume):
-        self.consume = consume
-
-        flags = flags.split(',')
-        for flag in flags:
-            flag = flag.strip()
-            if flag.startswith('--'):
-                self.long_flag = flag
-                self.name = flag[2:]
-            else:
-                self.short_flag = flag
+    def __init__(self, long, aliases, arguments):
+        self.consume = len(arguments)
+        self.arguments = arguments
+        self.name = long[2:]
+        self.aliases = aliases
 
 class Command():
-    def __init__(self, name=None):
+    def __init__(self, name=None, aliases=[]):
         self._arguments = []
         self._options = []
-        self._commands = {}
+        self._commands = []
         self.name = name
+        self.aliases = aliases
 
     def argument(self, name):
         self._arguments.append(Argument(name))
         setattr(self, name, None)
 
-    def option(self, flags, consume=0):
-        option = Option(flags, consume)
+    def option(self, long, aliases=[], arguments=[]):
+        option = Option(long, aliases, arguments)
         self._options.append(option)
         setattr(self, option.name, None)
 
-    def command(self, name):
-        self._commands[name] = Command(name=name)
-        return self._commands[name]
+    def command(self, name, aliases=[]):
+        command = Command(name=name, aliases=aliases)
+        self._commands.append(command)
+        return command
 
     def parse(self, argv):
         argv = self._parse_options(argv)
         argv = self._parse_arguments(argv)
-
-        if len(argv):
-            command = argv[0]
-            if command in self._commands:
-                self.command = self._commands[command]
-                self.command.parse(argv[1:])
-            elif len(self._commands):
-                print('ERROR: invalid command: {}'.format(command))
-            else:
-                print('ERROR: too many arguments: {}'.format(argv))
+        self._parse_command(argv)
 
     def _parse_options(self, argv):
         while len(argv):
@@ -59,7 +58,7 @@ class Command():
 
             arg = argv.pop(0)
 
-            option = next((o for o in self._options if o.short_flag == arg or o.long_flag == arg), None)
+            option = next((o for o in self._options if arg == o.name or arg in o.aliases), None)
 
             if option:
                 if option.consume == 0:
@@ -72,7 +71,7 @@ class Command():
 
                 setattr(self, option.name, val)
             else:
-                print('ERROR: unknown option: {}'.format(arg))
+                raise UnknownOptionError(arg)
 
         return argv
 
@@ -86,9 +85,19 @@ class Command():
             setattr(self, argument.name, arg)
 
         if len(self._arguments):
-            print('ERROR: missing arguments: {}'.format(self._arguments))
+            raise MissingArgumentsError(self._arguments)
 
         return argv
+
+    def _parse_command(self, argv):
+        if len(argv):
+            name = argv[0]
+            command = next((c for c in self._commands if name == c.name or name in c.aliases), None)
+            if command in self._commands:
+                self.command = command
+                self.command.parse(argv[1:])
+            elif len(self._commands):
+                raise InvalidCommandError(command)
 
 class Program(Command):
     def __init__(self):
