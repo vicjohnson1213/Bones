@@ -17,36 +17,39 @@ class InvalidCommandError(BonesError):
         self.command = command
 
 class Argument():
-    def __init__(self, name):
+    def __init__(self, name, description):
         self.name = name
+        self.description = description
 
 class Option():
-    def __init__(self, long, aliases, arguments):
+    def __init__(self, long, aliases, arguments, description):
         self.consume = len(arguments)
         self.arguments = arguments
         self.name = long[2:]
         self.aliases = [long] + aliases
+        self.description = description
 
 class Command():
-    def __init__(self, name=None, aliases=[], parent=None):
+    def __init__(self, name=None, aliases=[], parent=None, description=None):
         self._arguments = []
         self._options = []
         self._commands = []
         self.name = name
         self.aliases = [name] + aliases
         self.parent = parent
+        self.description = description
 
-    def argument(self, name):
-        self._arguments.append(Argument(name))
+    def argument(self, name, description=None):
+        self._arguments.append(Argument(name, description))
         setattr(self, utils.snake_case(name), None)
 
-    def option(self, long, aliases=[], arguments=[]):
-        option = Option(long, aliases, arguments)
+    def option(self, long, aliases=[], arguments=[], description=None):
+        option = Option(long, aliases, arguments, description)
         self._options.append(option)
         setattr(self, utils.snake_case(option.name), None)
 
-    def command(self, name, aliases=[]):
-        command = Command(name=name, aliases=aliases, parent=self)
+    def command(self, name, aliases=[], description=None):
+        command = Command(name=name, aliases=aliases, parent=self, description=description)
         self._commands.append(command)
         return command
 
@@ -70,14 +73,14 @@ class Command():
         options = []
         for option in self._options:
             names = ', '.join(option.aliases)
-            options.append((names, 'some description'))
+            options.append((names, option.description))
 
-        arguments = list(((a.name, 'some arg thing') for a in self._arguments))
+        arguments = list(((a.name, a.description) for a in self._arguments))
 
         commands = []
         for command in self._commands:
             names = ', '.join(command.aliases)
-            commands.append((names, 'some command description'))
+            commands.append((names, command.description))
 
         allNames = list(map(lambda o: o[0], options))
         allNames += list(map(lambda a: a[0], arguments))
@@ -92,19 +95,19 @@ class Command():
             usage += '\n\n'
             usage += 'Options:\n'
             for option in options:
-                usage += '    {}{}'.format(option[0], option[1])
+                usage += '    {}{}\n'.format(option[0], option[1] or '')
 
         if len(arguments):
-            usage += '\n\n'
+            usage += '\n'
             usage += 'Arguments:\n'
             for argument in arguments:
-                usage += '    {}{}'.format(argument[0], argument[1])
+                usage += '    {}{}\n'.format(argument[0], argument[1] or '')
 
         if len(commands):
-            usage += '\n\n'
+            usage += '\n'
             usage += 'Commands:\n'
             for command in commands:
-                usage += '    {}{}'.format(command[0], command[1])
+                usage += '    {}{}\n'.format(command[0], command[1] or '')
 
         return usage
 
