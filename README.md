@@ -26,7 +26,7 @@ Adds a new command-line option or flag to the program.
 | `arguments` | The `arguments` argument is optional and can be used to name any arguments that this option will consume. This argument will also determine how many command-line arguments after this option are consumed. | `[]` |
 | `description` | The `description` argument is optional will be displayed as the help text in the default help output. | `None` |
 
-The values for a parsed option are available via an attribute on the program named by the `long` argument. If an option doesn't consume any arguments, it's value will be set to `True` if it is present. If there is a single argument, the value will simply be what is passed into the option. If there is more than one argument, they will be available as a list of values.
+The values for a parsed option are available via an attribute on the program named by the `long` argument. If an option doesn't consume any arguments, it's value will be set to `True` if it is present. If there is a single argument, the value will simply be what is passed into the option. If there is more than one argument, they will be available as a list of values. Any options that aren't used in the execution of the program will have a value of `None`.
 
 **Note:** Any non-alphanumeric characters in the `long` argument will be converted to underscores for accessing the value (e.g. `--some-option` will be accessible via `program.some_option`).
 

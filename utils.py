@@ -10,3 +10,16 @@ def get_parents(command):
     parents = get_parents(command.parent)
     parents.append(command.name)
     return parents
+
+def normalize_argv(argv):
+    new_args = []
+
+    for arg in argv:
+        if arg.startswith('--'):
+            new_args += arg.split('=')
+        elif arg.startswith('-'):
+            new_args += map(lambda a: '-' + a, list(arg[1:]))
+        else:
+            new_args.append(arg)
+
+    return new_args

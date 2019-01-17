@@ -54,6 +54,7 @@ class Command():
         return command
 
     def parse(self, argv):
+        argv = utils.normalize_argv(argv)
         argv = self._parse_options(argv)
         argv = self._parse_arguments(argv)
         self._parse_command(argv)
