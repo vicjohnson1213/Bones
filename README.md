@@ -15,6 +15,8 @@
 
 `Program(name)`
 
+**Returns:** A new program that options/arguments/commands can be added to.
+
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `name` | The `name` argument is required and will be displayed in the output of the default help text. | Required |
@@ -55,8 +57,6 @@ print(program.input_file) # 'some-file.txt'
 
 `program.argument(name, description=None)`
 
-Adds a new positional argument to the program.
-
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `name` | The `name` argument is required and will act as the attribute that the value for this argument can be accessed through. | Required |
@@ -80,7 +80,7 @@ print(program.output_file) # 'some-output-file.txt'
 
 `program.command(name, aliases=[], description=None)`
 
-Adds a new sub-command to the program and returns the new command so options/arguments/sub-commands can be added to it. Sub-commands can be nested indefinitely.
+**Returns**: The new command so options/arguments/commands can be added to it.
 
 | Argument | Description | Default |
 |----------|-------------|---------|
@@ -134,7 +134,7 @@ print(program.some_argument) # 'argument #1'
 
 `program.help()`
 
-Returns the auto-generated help text for the command. Each sub-command will have its own help text.
+**Returns:** The auto-generated help text for the command. Each sub-command will have its own help text.
 
 ```python
 program = Program('prog')
