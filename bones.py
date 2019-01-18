@@ -30,7 +30,7 @@ class Option():
         self.description = description
 
 class Command():
-    def __init__(self, name=None, aliases=[], parent=None, description=None):
+    def __init__(self, name, aliases=[], parent=None, description=None):
         self._arguments = []
         self._options = []
         self._commands = []
@@ -162,8 +162,8 @@ class Command():
                 raise InvalidCommandError(command)
 
 class Program(Command):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name):
+        super().__init__(name)
 
     def parse(self, argv):
         self.name = argv[0]

@@ -2,22 +2,33 @@
 
 > A bare-bones, opinionated command-line options parser for python.
 
-## Usage
+# Usage
 
-### `Program()`
+- [`Program()`](#program)
+- [`program.option(long, aliases=[], arguments=[], description=None)`](#options)
+- [`program.argument(name, description=None)`](#arguments)
+- [`program.command(name, aliases=[], description=None)`](#commands)
+- [`program.parse(argv)`](#parse)
+- [ `program.help()`](#help)
+
+## Program
+
+`Program(name)`
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `name` | The `name` argument is required and will be displayed in the output of the default help text. | Required |
 
 Creates a new options parser. This parser will serve as the root of all other options, arguments, and commands.
 
 ```python
-from Bones improt Program
-program = Program()
+from Bones import Program
+program = Program('prog')
 ```
 
-#### Methods
+## Options
 
-#### `program.option(long, aliases=[], arguments=[], description=None)`
-
-Adds a new command-line option or flag to the program.
+`program.option(long, aliases=[], arguments=[], description=None)`
 
 | Argument | Description | Default |
 |----------|-------------|---------|
@@ -31,7 +42,7 @@ The values for a parsed option are available via an attribute on the program nam
 **Note:** Any non-alphanumeric characters in the `long` argument will be converted to underscores for accessing the value (e.g. `--some-option` will be accessible via `program.some_option`).
 
 ```python
-program = Program()
+program = Program('prog')
 program.option('--force', aliases=['-f'])
 program.option('--input-file', aliases=['-i', '--in'], arguments=['input-file'])
 program.parse(sys.argv) # ['program.py', '-f', '--in', 'some-file.txt']
@@ -40,7 +51,9 @@ print(program.force) # True
 print(program.input_file) # 'some-file.txt'
 ```
 
-#### `program.argument(name, description=None)`
+## Arguments
+
+`program.argument(name, description=None)`
 
 Adds a new positional argument to the program.
 
@@ -54,7 +67,7 @@ The value for a parsed argument are available via an attribute on the program na
 **Note:** Any non-alphanumeric characters in the `name` argument will be converted to underscores for accessing the value (e.g. `some-argument` will be accessible via `program.some_argument`).
 
 ```python
-program = Program()
+program = Program('prog')
 program.argument('input file')
 program.argument('output file')
 program.parse(sys.argv) # ['program.py', 'some-input-file.txt', 'some-output-file.txt']
@@ -63,7 +76,9 @@ print(program.input_file) # 'some-input-file.txt'
 print(program.output_file) # 'some-output-file.txt'
 ```
 
-#### `program.command(name, aliases=[], description=None)`
+## Commands
+
+`program.command(name, aliases=[], description=None)`
 
 Adds a new sub-command to the program and returns the new command so options/arguments/sub-commands can be added to it. Sub-commands can be nested indefinitely.
 
@@ -78,7 +93,7 @@ The sub-command and its options/arguments are accessible via the `program.comman
 **Note:** Since a sub-command is always accessed via the `program.command` attribute, non-alphanumeric characters in the name ***are not*** converted to underscores.
 
 ```python
-program = Program()
+program = Program('prog')
 
 add = program.command('add', aliases=['a'])
 add.argument('left')
@@ -95,7 +110,9 @@ print(program.command.left) # '1'
 print(program.command.right) # '2'
 ```
 
-#### `program.parse(argv)`
+## Parse
+
+`program.parse(argv)`
 
 Parses the command line arguments and sets up the program for the rest of the execution.
 
@@ -106,29 +123,32 @@ Parses the command line arguments and sets up the program for the rest of the ex
 Once parse runs, the program should be populated with the data supplied in the command-line arguments.
 
 ```python
-program = Program()
+program = Program('prog')
 program.argument('some-argument')
 program.parse(sys.argv) # ['program.py', 'argument #1']
 
 print(program.some_argument) # 'argument #1'
 ```
 
-#### `program.help()`
+## Help
+
+`program.help()`
 
 Returns the auto-generated help text for the command. Each sub-command will have its own help text.
 
 ```python
-program = Program()
+program = Program('prog')
 program.option('--force', aliases=['-f'], description='forces something to happen')
 program.option('--output', aliases=['--out', '-o'], description='the output file')
 program.argument('some-argument', description='an argument for this program')
-program.command('action', description='performs some action')
+
+action = program.command('action', description='performs some action')
+action.option('--something', description='a description for this option')
+action.argument('input', 'an input file for this command')
 
 print(program.help())
 
-# Outputs:
-#
-# usage: None [options] <some-argument> <command>
+# usage: prog [options] <some-argument> <command>
 #
 # Options:
 #     --force, -f          forces something to happen
@@ -139,4 +159,14 @@ print(program.help())
 #
 # Commands:
 #     action               performs some action
+
+print(action.help())
+
+# usage: prog ... action [options] <input>
+#
+# Options:
+#     --something  a description for this option
+#
+# Arguments:
+#     input        an input file for this command
 ```
