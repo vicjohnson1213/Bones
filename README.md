@@ -1,6 +1,6 @@
 # Bones
 
-> A bare-bones, opinionated command-line options parser for python.
+> Bones is a bare-bones, opinionated command-line options parser for python.
 
 # Usage
 
@@ -9,17 +9,18 @@
 - [`program.argument(name, description=None)`](#arguments)
 - [`program.command(name, aliases=[], description=None)`](#commands)
 - [`program.parse(argv)`](#parse)
-- [ `program.help()`](#help)
+- [`program.help()`](#help)
 
 ## Program
 
-`Program(name)`
+`Program(name, description=None)`
 
 **Returns:** A new program that options/arguments/commands can be added to.
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `name` | The `name` argument is required and will be displayed in the output of the default help text. | Required |
+| `name` | The `name` argument is required and will be displayed in the output of the default help text. This should usually be `sys.argv[0]`. | Required |
+| `description` | The `description` argument is optional and will be displayed in the output of the default help text. | `None` |
 
 Creates a new options parser. This parser will serve as the root of all other options, arguments, and commands.
 
@@ -55,14 +56,15 @@ print(program.input_file) # 'some-file.txt'
 
 ## Arguments
 
-`program.argument(name, description=None)`
+`program.argument(name, description=None, variadic=False)`
 
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `name` | The `name` argument is required and will act as the attribute that the value for this argument can be accessed through. | Required |
 | `description` | The `description` argument is optional will be displayed as the help text in the default help output. | `None` |
+| `variadic` | The `variadic` argument is optional allows for a variable number of arguments to be passed into the program. If `variadic` is set to `True`, it will disallow any other arguments or commands in the program. | `False` |
 
-The value for a parsed argument are available via an attribute on the program named by the `name` argument.
+The value for a parsed argument are available via an attribute on the program named by the `name` argument. If this argument is variadic, the values will be available as a list of all values passed in.
 
 **Note:** Any non-alphanumeric characters in the `name` argument will be converted to underscores for accessing the value (e.g. `some-argument` will be accessible via `program.some_argument`).
 
@@ -148,7 +150,7 @@ action.argument('input', 'an input file for this command')
 
 print(program.help())
 
-# usage: prog [options] <some-argument> <command>
+# usage: prog [options] <some-argument> {command}
 #
 # Options:
 #     --force, -f          forces something to happen

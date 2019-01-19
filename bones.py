@@ -16,10 +16,16 @@ class InvalidCommandError(BonesError):
     def __init__(self, command):
         self.command = command
 
+class VariadicArgumentPositionError(BonesError):
+    def __init__(self, argument):
+        self.argument = argument
+
+
 class Argument():
-    def __init__(self, name, description):
+    def __init__(self, name, description, variadic):
         self.name = name
         self.description = description
+        self.variadic = variadic
 
 class Option():
     def __init__(self, long, aliases, arguments, description):
@@ -39,8 +45,11 @@ class Command():
         self.parent = parent
         self.description = description
 
-    def argument(self, name, description=None):
-        self._arguments.append(Argument(name, description))
+    def argument(self, name, description=None, variadic=False):
+        if any(a.variadic for a in self._arguments):
+            raise VariadicArgumentPositionError(name)
+
+        self._arguments.append(Argument(name, description, variadic))
         setattr(self, utils.snake_case(name), None)
 
     def option(self, long, aliases=[], arguments=[], description=None):
@@ -49,6 +58,9 @@ class Command():
         setattr(self, utils.snake_case(option.name), None)
 
     def command(self, name, aliases=[], description=None):
+        if any(a.variadic for a in self._arguments):
+            raise VariadicArgumentPositionError(name)
+
         command = Command(name=name, aliases=aliases, parent=self, description=description)
         self._commands.append(command)
         return command
@@ -60,7 +72,12 @@ class Command():
         self._parse_command(argv)
 
     def help(self):
-        usage = 'usage: '
+        usage = '{}\n\n'.format(self.name)
+
+        if self.description:
+            usage += '{}\n\n'.format(self.description)
+
+        usage += 'usage: '
 
         if self.parent:
             parents = utils.get_parents(self.parent)
@@ -69,7 +86,9 @@ class Command():
         arg_string = list(map(lambda a: '<{}>'.format(a.name), self._arguments))
         usage += '{} [options] {}'.format(self.name, ' '.join(arg_string))
         if len(self._commands):
-            usage += ' <command>'
+            usage += ' {command}'
+
+        usage += '\n'
 
         options = []
         for option in self._options:
@@ -93,7 +112,7 @@ class Command():
         commands = list(map(lambda c: (c[0].ljust(maxlen + 2, ' '), c[1]), commands))
 
         if len(options):
-            usage += '\n\n'
+            usage += '\n'
             usage += 'Options:\n'
             for option in options:
                 usage += '    {}{}\n'.format(option[0], option[1] or '')
@@ -142,9 +161,10 @@ class Command():
             if not len(argv):
                 break
 
-            arg = argv.pop(0)
             argument = arguments.pop(0)
-            setattr(self,  utils.snake_case(argument.name), arg)
+            val = argv if argument.variadic else argv.pop(0)
+
+            setattr(self,  utils.snake_case(argument.name), val)
 
         if len(arguments):
             raise MissingArgumentsError(arguments)
@@ -162,9 +182,8 @@ class Command():
                 raise InvalidCommandError(command)
 
 class Program(Command):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, description=None):
+        super().__init__(name, description=description)
 
     def parse(self, argv):
-        self.name = argv[0]
         super().parse(argv[1:])

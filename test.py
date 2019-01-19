@@ -19,13 +19,21 @@ from bones import Program
 # print(program.help())
 # print(program.command.help())
 
-program = Program('prog')
-program.option('--force', aliases=['-f'], description='forces something to happen')
-program.option('--output', aliases=['--out', '-o'], description='the output file')
-program.argument('some-argument', description='an argument for this program')
-action = program.command('action', description='performs some action')
-action.option('--something', description='a description for this option')
-action.argument('input', 'an input file for this command')
-
-print(action.help())
+# program = Program('prog')
+# program.option('--force', aliases=['-f'], description='forces something to happen')
+# program.option('--output', aliases=['--out', '-o'], description='the output file')
+# program.argument('some-argument', description='an argument for this program')
+# action = program.command('action', description='performs some action')
+# action.option('--something', description='a description for this option')
+# action.argument('input', 'an input file for this command')
+#
+# print(action.help())
 # print(program.help())
+
+program = Program('prog', description='hello world this is a description')
+program.argument('thing')
+program.argument('thingasdf', variadic=True)
+
+program.parse(sys.argv)
+
+print(program.thingasdf)
