@@ -90,8 +90,13 @@ class Command():
             parents = utils.get_parents(self.parent)
             usage += '{}'.format(''.join(map(lambda p: p + ' ... ', parents)))
 
-        arg_string = list(map(lambda a: '<{}>'.format(a.name), self._arguments))
-        usage += '{} [options] {}'.format(self.name, ' '.join(arg_string))
+        arg_strings = []
+        for arg in self._arguments:
+            s = '<{}'.format(arg.name)
+            s += '...>' if arg.variadic else '>'
+            arg_strings.append(s)
+
+        usage += '{} [options] {}'.format(self.name, ' '.join(arg_strings))
         if len(self._commands):
             usage += ' {command}'
 
@@ -100,9 +105,16 @@ class Command():
         options = []
         for option in self._options:
             names = ', '.join(option.aliases)
-            options.append((names, option.description))
+            args = ' '.join('<{}>'.format(a) for a in option.arguments)
+            s = '{} {}'.format(names, args)
+            options.append((s, option.description))
 
-        arguments = list(((a.name, a.description) for a in self._arguments))
+        arguments = []
+        for arg in self._arguments:
+            s = arg.name
+            if arg.variadic:
+                s += '...'
+            arguments.append((s, arg.description))
 
         commands = []
         for command in self._commands:
