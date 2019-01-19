@@ -5,8 +5,8 @@
 # Usage
 
 - [`Program()`](#program)
-- [`program.option(long, aliases=[], arguments=[], description=None)`](#options)
-- [`program.argument(name, description=None)`](#arguments)
+- [`program.option(long, aliases=[], arguments=[], description=None, parse=None)`](#options)
+- [`program.argument(name, description=None, variadic=False, parse=None)`](#arguments)
 - [`program.command(name, aliases=[], description=None)`](#commands)
 - [`program.parse(argv)`](#parse)
 - [`program.help()`](#help)
@@ -31,7 +31,7 @@ program = Program('prog')
 
 ## Options
 
-`program.option(long, aliases=[], arguments=[], description=None)`
+`program.option(long, aliases=[], arguments=[], description=None, parse=None)`
 
 | Argument | Description | Default |
 |----------|-------------|---------|
@@ -39,6 +39,7 @@ program = Program('prog')
 | `aliases` | The `aliases` argument is optional and can be used to define any alternate option names or flags that can be used for this option. | `[]` |
 | `arguments` | The `arguments` argument is optional and can be used to name any arguments that this option will consume. This argument will also determine how many command-line arguments after this option are consumed. | `[]` |
 | `description` | The `description` argument is optional will be displayed as the help text in the default help output. | `None` |
+| `parse` | The `parse` argument is optional and can be used to automatically parse argument options. If the option takes multiple arguments, parse will run on each of them individually. | `None` |
 
 The values for a parsed option are available via an attribute on the program named by the `long` argument. If an option doesn't consume any arguments, it's value will be set to `True` if it is present. If there is a single argument, the value will simply be what is passed into the option. If there is more than one argument, they will be available as a list of values. Any options that aren't used in the execution of the program will have a value of `None`.
 
@@ -56,13 +57,14 @@ print(program.input_file) # 'some-file.txt'
 
 ## Arguments
 
-`program.argument(name, description=None, variadic=False)`
+`program.argument(name, description=None, variadic=False, parse=None)`
 
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `name` | The `name` argument is required and will act as the attribute that the value for this argument can be accessed through. | Required |
 | `description` | The `description` argument is optional will be displayed as the help text in the default help output. | `None` |
 | `variadic` | The `variadic` argument is optional allows for a variable number of arguments to be passed into the program. If `variadic` is set to `True`, it will disallow any other arguments or commands in the program. | `False` |
+| `parse` | The `parse` argument is optional and can be used to automatically parse arguments. If the argument is variadic, each argument will be parsed individually. | `None` |
 
 The value for a parsed argument are available via an attribute on the program named by the `name` argument. If this argument is variadic, the values will be available as a list of all values passed in.
 

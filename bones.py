@@ -20,20 +20,27 @@ class VariadicArgumentPositionError(BonesError):
     def __init__(self, argument):
         self.argument = argument
 
+class ParseError(BonesError):
+    def __init__(self, innerException, arg):
+        self.innerException = innerException
+        self.argument = arg
+
 
 class Argument():
-    def __init__(self, name, description, variadic):
+    def __init__(self, name, description, variadic, parse):
         self.name = name
         self.description = description
         self.variadic = variadic
+        self.parse = parse
 
 class Option():
-    def __init__(self, long, aliases, arguments, description):
+    def __init__(self, long, aliases, arguments, description, parse):
         self.consume = len(arguments)
         self.arguments = arguments
         self.name = long[2:]
         self.aliases = [long] + aliases
         self.description = description
+        self.parse = parse
 
 class Command():
     def __init__(self, name, aliases=[], parent=None, description=None):
@@ -45,17 +52,17 @@ class Command():
         self.parent = parent
         self.description = description
 
-    def argument(self, name, description=None, variadic=False):
+    def option(self, long, aliases=[], arguments=[], description=None, parse=None):
+        option = Option(long, aliases, arguments, description, parse)
+        self._options.append(option)
+        setattr(self, utils.snake_case(option.name), None)
+
+    def argument(self, name, description=None, variadic=False, parse=None):
         if any(a.variadic for a in self._arguments):
             raise VariadicArgumentPositionError(name)
 
-        self._arguments.append(Argument(name, description, variadic))
+        self._arguments.append(Argument(name, description, variadic, parse))
         setattr(self, utils.snake_case(name), None)
-
-    def option(self, long, aliases=[], arguments=[], description=None):
-        option = Option(long, aliases, arguments, description)
-        self._options.append(option)
-        setattr(self, utils.snake_case(option.name), None)
 
     def command(self, name, aliases=[], description=None):
         if any(a.variadic for a in self._arguments):
@@ -144,10 +151,18 @@ class Command():
                 if option.consume == 0:
                     val = True
                 elif option.consume == 1:
-                    val = argv.pop(0)
+                    unparsed_val = argv.pop(0)
                 else:
-                    val = argv[:option.consume]
+                    unparsed_val = argv[:option.consume]
                     argv = argv[option.consume:]
+
+                if option.parse and option.consume >= 1:
+                    try:
+                        val = option.parse(unparsed_val) if option.consume >= 1 else list(map(option.parse, unparsed_val))
+                    except Exception as e:
+                        raise ParseError(e, unparsed_val)
+                else:
+                    val = unparsed_val
 
                 setattr(self, utils.snake_case(option.name), val)
             else:
@@ -163,6 +178,15 @@ class Command():
 
             argument = arguments.pop(0)
             val = argv if argument.variadic else argv.pop(0)
+
+            if argument.parse:
+                try:
+                    if argument.variadic:
+                        val = list(map(argument.parse, val))
+                    else:
+                        val = argument.parse(val)
+                except Exception as e:
+                    raise ParseError(e, val)
 
             setattr(self,  utils.snake_case(argument.name), val)
 
