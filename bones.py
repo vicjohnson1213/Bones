@@ -2,31 +2,37 @@ import re
 import utils
 
 class BonesError(Exception):
+    """Base error for this package."""
     pass
 
 class UnknownOptionError(BonesError):
+    """Error for options that weren't set up through the `program.option(...)` method."""
     def __init__(self, option):
         self.option = option
 
 class MissingArgumentsError(BonesError):
+    """Error for positional arguments that weren't supplied."""
     def __init__(self, args):
         self.arguments = args
 
 class InvalidCommandError(BonesError):
+    """Error for a command that doesn't exist in the program."""
     def __init__(self, command):
         self.command = command
 
 class VariadicArgumentPositionError(BonesError):
+    """Error for when an argument or command is added after a variadic argument."""
     def __init__(self, argument):
         self.argument = argument
 
 class ParseError(BonesError):
+    """Error for when an automatic parse of an option fails."""
     def __init__(self, innerException, arg):
         self.innerException = innerException
         self.argument = arg
 
-
 class Argument():
+    """A positional argument in the program."""
     def __init__(self, name, description, variadic, parse):
         self.name = name
         self.description = description
@@ -34,6 +40,7 @@ class Argument():
         self.parse = parse
 
 class Option():
+    """An option or flag in the program."""
     def __init__(self, long, aliases, arguments, description, parse):
         self.consume = len(arguments)
         self.arguments = arguments
@@ -43,6 +50,7 @@ class Option():
         self.parse = parse
 
 class Command():
+    """A command that can contain options, argument, and sub-commands."""
     def __init__(self, name, aliases=[], parent=None, description=None):
         self._arguments = []
         self._options = []
@@ -53,11 +61,13 @@ class Command():
         self.description = description
 
     def option(self, long, aliases=[], arguments=[], description=None, parse=None):
+        """Adds a new option or flag to this command."""
         option = Option(long, aliases, arguments, description, parse)
         self._options.append(option)
         setattr(self, utils.snake_case(option.name), None)
 
     def argument(self, name, description=None, variadic=False, parse=None):
+        """Adds a new positional argument to this command."""
         if any(a.variadic for a in self._arguments):
             raise VariadicArgumentPositionError(name)
 
@@ -65,6 +75,7 @@ class Command():
         setattr(self, utils.snake_case(name), None)
 
     def command(self, name, aliases=[], description=None):
+        """Adds and returns a new sub-command to this command."""
         if any(a.variadic for a in self._arguments):
             raise VariadicArgumentPositionError(name)
 
@@ -73,12 +84,14 @@ class Command():
         return command
 
     def parse(self, argv):
+        """Parse a set of arguments for this command."""
         argv = utils.normalize_argv(argv)
         argv = self._parse_options(argv)
         argv = self._parse_arguments(argv)
         self._parse_command(argv)
 
     def help(self):
+        """Builds and returns default help text for this command."""
         usage = '{}\n\n'.format(self.name)
 
         if self.description:
@@ -151,6 +164,7 @@ class Command():
         return usage
 
     def _parse_options(self, argv):
+        """Parses all options for this command."""
         while len(argv):
             if not argv[0].startswith('-'):
                 break
@@ -183,6 +197,7 @@ class Command():
         return argv
 
     def _parse_arguments(self, argv):
+        """Parses all positional arguments for this command."""
         arguments = self._arguments.copy()
         while len(arguments):
             if not len(argv):
@@ -208,6 +223,10 @@ class Command():
         return argv
 
     def _parse_command(self, argv):
+        """
+        Parses the sub-command for this command and initiates any parsing that
+        the sub-command may need to do.
+        """
         if len(argv):
             name = argv[0]
             command = next((c for c in self._commands if name in c.aliases), None)
@@ -218,6 +237,7 @@ class Command():
                 raise InvalidCommandError(command)
 
 class Program(Command):
+    """The main program for bones. Just a wrapper around the Command class."""
     def __init__(self, name, description=None):
         super().__init__(name, description=description)
 
